@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>每日英语 - 初中英语学习</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ========== 顶部导航栏 ========== -->
+  <header class="top-bar">
+    <div class="top-left">
+      <h1 class="logo">📚 每日英语</h1>
+      <span class="subtitle" id="todayDate"></span>
+    </div>
+    <div class="top-right">
+      <span class="streak-badge" id="streakBadge">🔥 0</span>
+    </div>
+  </header>
+
+  <!-- ========== 主内容区 ========== -->
+  <main id="mainContent">
+
+    <!-- ===== 页面1：学习 ===== -->
+    <section id="page-learn" class="page active">
+      <div class="section-header">
+        <h2>📖 今日学习</h2>
+        <select id="gradeSelect" class="grade-select" onchange="onGradeChange()"></select>
+      </div>
+
+      <!-- 今日单词概览 -->
+      <div class="today-overview" id="todayOverview">
+        <div class="stat-card">
+          <span class="stat-icon">🎯</span>
+          <span class="stat-num" id="todayTarget">0</span>
+          <span class="stat-label">今日目标</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">✅</span>
+          <span class="stat-num" id="todayDone">0</span>
+          <span class="stat-label">已完成</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">📊</span>
+          <span class="stat-num" id="totalMastered">0</span>
+          <span class="stat-label">已掌握</span>
+        </div>
+      </div>
+
+      <!-- 学习模式切换 -->
+      <div class="mode-tabs">
+        <button class="mode-tab active" onclick="switchLearnMode('flashcard')">🃏 卡片浏览</button>
+        <button class="mode-tab" onclick="switchLearnMode('spell')">✍️ 拼写练习</button>
+        <button class="mode-tab" onclick="switchLearnMode('quiz')">🧠 选择题</button>
+      </div>
+
+      <!-- 卡片模式 -->
+      <div id="mode-flashcard" class="learn-mode active">
+        <div class="flashcard" onclick="flipCard()">
+          <div class="card-inner" id="cardInner">
+            <div class="card-front">
+              <p class="card-word" id="cardWord">点击开始</p>
+              <p class="card-hint">👆 点击翻转</p>
+            </div>
+            <div class="card-back">
+              <p class="card-meaning" id="cardMeaning"></p>
+              <p class="card-sentence" id="cardSentence"></p>
+            </div>
+          </div>
+        </div>
+        <div class="card-controls">
+          <span class="card-progress" id="cardProgress">0 / 0</span>
+          <div class="card-buttons">
+            <button class="btn btn-secondary" onclick="prevCard()">← 上一个</button>
+            <button class="btn btn-primary" onclick="nextCard()">下一个 →</button>
+          </div>
+        </div>
+        <button class="btn btn-outline shuffle-btn" onclick="shuffleCards()">🔀 重新洗牌</button>
+      </div>
+
+      <!-- 拼写模式 -->
+      <div id="mode-spell" class="learn-mode">
+        <div class="spell-area">
+          <p class="spell-prompt" id="spellPrompt">👆 点击下方按钮开始</p>
+          <input type="text" class="spell-input" id="spellInput" placeholder="输入英文单词..." autocomplete="off" autocapitalize="off">
+          <div class="spell-buttons">
+            <button class="btn btn-primary" onclick="checkSpell()">✅ 检查</button>
+            <button class="btn btn-secondary" onclick="showHint()">💡 提示</button>
+            <button class="btn btn-outline" onclick="nextSpell()">⏭️ 下一题</button>
+          </div>
+          <div class="spell-result" id="spellResult"></div>
+        </div>
+        <div class="spell-score">
+          <span>✅ <span id="spellCorrect">0</span></span>
+          <span>❌ <span id="spellWrong">0</span></span>
+          <span>📊 <span id="spellAccuracy">0%</span></span>
+        </div>
+      </div>
+
+      <!-- 选择题模式 -->
+      <div id="mode-quiz" class="learn-mode">
+        <div class="quiz-area">
+          <p class="quiz-question" id="quizQuestion">选择正确的翻译：</p>
+          <p class="quiz-word" id="quizWord">apple</p>
+          <div class="quiz-options" id="quizOptions"></div>
+          <div class="quiz-result" id="quizResult"></div>
+          <div class="quiz-score">
+            <span>✅ <span id="quizCorrect">0</span></span>
+            <span>❌ <span id="quizWrong">0</span></span>
+          </div>
+          <button class="btn btn-primary" onclick="nextQuiz()">下一题 →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 页面2：任务 ===== -->
+    <section id="page-tasks" class="page">
+      <div class="section-header">
+        <h2>📋 每日任务</h2>
+        <span id="taskDate"></span>
+      </div>
+
+      <!-- 任务列表 -->
+      <div class="task-list" id="taskList">
+        <div class="task-item" data-task="recite">
+          <div class="task-check" onclick="toggleTask('recite')">
+            <span class="check-box" id="check-recite">⬜</span>
+          </div>
+          <div class="task-content">
+            <p class="task-title">📖 背诵今日单词</p>
+            <p class="task-desc">用卡片模式学习今日单词，至少看一遍</p>
+          </div>
+        </div>
+        <div class="task-item" data-task="spell">
+          <div class="task-check" onclick="toggleTask('spell')">
+            <span class="check-box" id="check-spell">⬜</span>
+          </div>
+          <div class="task-content">
+            <p class="task-title">✍️ 拼写练习</p>
+            <p class="task-desc">完成拼写练习，正确率 ≥ 60%</p>
+          </div>
+        </div>
+        <div class="task-item" data-task="quiz">
+          <div class="task-check" onclick="toggleTask('quiz')">
+            <span class="check-box" id="check-quiz">⬜</span>
+          </div>
+          <div class="task-content">
+            <p class="task-title">🧠 选择题测验</p>
+            <p class="task-desc">完成选择题，正确率 ≥ 70%</p>
+          </div>
+        </div>
+        <div class="task-item" data-task="review">
+          <div class="task-check" onclick="toggleTask('review')">
+            <span class="check-box" id="check-review">⬜</span>
+          </div>
+          <div class="task-content">
+            <p class="task-title">🔄 复习错词</p>
+            <p class="task-desc">复习之前做错的单词</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 今日总结 -->
+      <div class="daily-summary" id="dailySummary">
+        <p>今日完成：<span id="taskProgress">0/4</span></p>
+        <div class="progress-bar">
+          <div class="progress-fill" id="taskProgressFill" style="width: 0%"></div>
+        </div>
+        <button class="btn btn-primary btn-large" id="completeBtn" onclick="completeDailyTasks()">
+          🎉 今日任务全部完成！
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== 页面3：进度 ===== -->
+    <section id="page-progress" class="page">
+      <div class="section-header">
+        <h2>📈 学习进度</h2>
+        <div class="header-actions">
+          <button class="btn btn-small btn-outline" onclick="showParentView()">👨‍👩‍👧 家长面板</button>
+        </div>
+      </div>
+
+      <!-- 连续打卡 -->
+      <div class="streak-section">
+        <h3>🔥 打卡记录</h3>
+        <div class="calendar" id="calendar"></div>
+      </div>
+
+      <!-- 本周统计 -->
+      <div class="stats-section">
+        <h3>📊 本周统计</h3>
+        <div class="weekly-chart" id="weeklyChart"></div>
+      </div>
+
+      <!-- 各年级进度 -->
+      <div class="grade-progress-section">
+        <h3>📚 各年级进度</h3>
+        <div id="gradeProgressList"></div>
+      </div>
+
+      <!-- 最近错词 -->
+      <div class="wrong-words-section">
+        <h3>❌ 最近错的词</h3>
+        <div id="wrongWordsList">
+          <p class="empty-state">暂无错词，继续加油！🎉</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========== 底部导航 ========== -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="switchPage('learn')">
+      <span class="nav-icon">📖</span>
+      <span class="nav-label">学习</span>
+    </button>
+    <button class="nav-item" onclick="switchPage('tasks')">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">任务</span>
+    </button>
+    <button class="nav-item" onclick="switchPage('progress')">
+      <span class="nav-icon">📈</span>
+      <span class="nav-label">进度</span>
+    </button>
+  </nav>
+
+  <!-- ========== 家长面板弹窗 ========== -->
+  <div class="modal-overlay" id="parentModal" onclick="closeParentView(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2>👨‍👩‍👧 家长监督面板</h2>
+        <button class="btn-close" onclick="closeParentView()">✕</button>
+      </div>
+      <div class="modal-body" id="parentBody">
+        <div class="parent-summary">
+          <div class="parent-stat">
+            <span class="ps-label">累计学习天数</span>
+            <span class="ps-value" id="pTotalDays">0</span>
+          </div>
+          <div class="parent-stat">
+            <span class="ps-label">本周学习天数</span>
+            <span class="ps-value" id="pWeekDays">0</span>
+          </div>
+          <div class="parent-stat">
+            <span class="ps-label">已掌握单词</span>
+            <span class="ps-value" id="pMastered">0</span>
+          </div>
+          <div class="parent-stat">
+            <span class="ps-label">总正确率</span>
+            <span class="ps-value" id="pAccuracy">0%</span>
+          </div>
+        </div>
+        <div class="parent-chart" id="parentChart"></div>
+        <div class="parent-log" id="parentLog">
+          <h3>📜 学习日志</h3>
+          <div id="parentLogList"></div>
+        </div>
+      </div>
+      <p class="parent-note">💡 数据自动保存，清空浏览器缓存会丢失数据</p>
+    </div>
+  </div>
+
+  <script src="words.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
