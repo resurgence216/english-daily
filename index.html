@@ -51,7 +51,8 @@
       <div class="mode-tabs">
         <button class="mode-tab active" onclick="switchLearnMode('flashcard')">🃏 卡片浏览</button>
         <button class="mode-tab" onclick="switchLearnMode('spell')">✍️ 拼写练习</button>
-        <button class="mode-tab" onclick="switchLearnMode('quiz')">🧠 选择题</button>
+        <button class="mode-tab" onclick="switchLearnMode('quiz')">🧠 语法题</button>
+        <button class="mode-tab" onclick="switchLearnMode('translate')">🌐 翻译</button>
       </div>
 
       <!-- 卡片模式 -->
@@ -60,11 +61,15 @@
           <div class="card-inner" id="cardInner">
             <div class="card-front">
               <p class="card-word" id="cardWord">点击开始</p>
+              <p class="card-pos" id="cardPos"></p>
               <p class="card-hint">👆 点击翻转</p>
+              <button class="btn-speak" onclick="event.stopPropagation();speakWord()">🔊</button>
             </div>
             <div class="card-back">
               <p class="card-meaning" id="cardMeaning"></p>
+              <p class="card-pos-back" id="cardPosBack"></p>
               <p class="card-sentence" id="cardSentence"></p>
+              <button class="btn-speak" onclick="event.stopPropagation();speakWord()">🔊</button>
             </div>
           </div>
         </div>
@@ -86,6 +91,7 @@
           <div class="spell-buttons">
             <button class="btn btn-primary" onclick="checkSpell()">✅ 检查</button>
             <button class="btn btn-secondary" onclick="showHint()">💡 提示</button>
+            <button class="btn btn-outline" onclick="speakWord()">🔊 朗读</button>
             <button class="btn btn-outline" onclick="nextSpell()">⏭️ 下一题</button>
           </div>
           <div class="spell-result" id="spellResult"></div>
@@ -102,6 +108,7 @@
         <div class="quiz-area">
           <p class="quiz-question" id="quizQuestion">选择正确的翻译：</p>
           <p class="quiz-word" id="quizWord">apple</p>
+          <button class="btn-speak-small" onclick="speakWord()">🔊</button>
           <div class="quiz-options" id="quizOptions"></div>
           <div class="quiz-result" id="quizResult"></div>
           <div class="quiz-score">
@@ -109,6 +116,29 @@
             <span>❌ <span id="quizWrong">0</span></span>
           </div>
           <button class="btn btn-primary" onclick="nextQuiz()">下一题 →</button>
+        </div>
+      </div>
+
+      <!-- 翻译模式 -->
+      <div id="mode-translate" class="learn-mode">
+        <div class="quiz-area">
+          <p class="quiz-question" id="transDirection">英译中</p>
+          <p class="quiz-word" id="transWord">apple</p>
+          <button class="btn-speak-small" onclick="speakWord()">🔊</button>
+          <input type="text" class="spell-input" id="transInput" placeholder="输入翻译..." autocomplete="off">
+          <div class="spell-buttons">
+            <button class="btn btn-primary" onclick="checkTranslation()">✅ 检查</button>
+            <button class="btn btn-secondary" onclick="showTransHint()">💡 提示</button>
+            <button class="btn btn-outline" onclick="nextTranslation()">⏭️ 下一题</button>
+          </div>
+          <div class="spell-result" id="transResult"></div>
+          <div class="spell-score">
+            <span>✅ <span id="transCorrect">0</span></span>
+            <span>❌ <span id="transWrong">0</span></span>
+          </div>
+          <div class="trans-toggle">
+            <label><input type="checkbox" id="transDirectionToggle" onchange="toggleTransDirection()"> 中译英模式</label>
+          </div>
         </div>
       </div>
     </section>

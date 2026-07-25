@@ -11,6 +11,40 @@ const TASKS = ['recite','spell','quiz','review'];
 const WEEKDAYS = ['日','一','二','三','四','五','六'];
 const MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 
+// ==================== 语法题库 ====================
+const GRAMMAR_QUESTIONS = [
+  { q: 'I ___ a student.', opts: ['am','is','are','be'], ans: 0, explain: 'I 搭配 am' },
+  { q: 'She ___ to school every day.', opts: ['go','goes','going','went'], ans: 1, explain: '第三人称单数加 -es' },
+  { q: 'They ___ playing football now.', opts: ['is','am','are','be'], ans: 2, explain: 'They 搭配 are' },
+  { q: 'There ___ a book on the desk.', opts: ['is','are','am','be'], ans: 0, explain: '单数名词用 There is' },
+  { q: '___ you like apples?', opts: ['Do','Does','Are','Is'], ans: 0, explain: 'You 前用 Do' },
+  { q: 'He ___ a new bike yesterday.', opts: ['get','gets','got','getting'], ans: 2, explain: 'yesterday 过去时' },
+  { q: 'We ___ go to the park tomorrow.', opts: ['will','are','do','did'], ans: 0, explain: 'tomorrow 将来时用 will' },
+  { q: 'This is ___ apple.', opts: ['a','an','the','/'], ans: 1, explain: 'apple 以元音开头用 an' },
+  { q: 'She is ___ than me.', opts: ['tall','taller','tallest','more tall'], ans: 1, explain: '比较级加 -er' },
+  { q: 'He runs ___.', opts: ['quick','quickly','quicker','quickest'], ans: 1, explain: '副词修饰动词' },
+  { q: 'My mother is a ___.', opts: ['teach','teacher','teaching','taught'], ans: 1, explain: '-er 表示职业' },
+  { q: 'I have ___ orange.', opts: ['a','an','the','/'], ans: 1, explain: 'orange 元音开头用 an' },
+  { q: 'We ___ playing games when he came.', opts: ['are','were','was','will'], ans: 1, explain: '过去进行时 were doing' },
+  { q: '___ a beautiful flower!', opts: ['What','How','Which','Where'], ans: 0, explain: '感叹句 What + 名词' },
+  { q: 'Can you ___ me?', opts: ['help','helps','helped','helping'], ans: 0, explain: 'can 后接动词原形' },
+  { q: 'I have two ___.', opts: ['pen','pens','penes','pen\'s'], ans: 1, explain: 'two 后接复数' },
+  { q: 'He ___ from China.', opts: ['come','comes','coming','came'], ans: 1, explain: '第三人称加 -s' },
+  { q: 'Let\'s ___ a rest.', opts: ['have','has','had','having'], ans: 0, explain: 'Let\'s 后接动词原形' },
+  { q: 'I ___ finished my homework.', opts: ['have','has','had','having'], ans: 0, explain: '现在完成时 I have' },
+  { q: 'She ___ to the library yesterday.', opts: ['go','goes','went','gone'], ans: 2, explain: 'yesterday 过去时' },
+  { q: 'The cat is ___ the box.', opts: ['in','on','at','of'], ans: 0, explain: '在里面用 in' },
+  { q: 'What time ___ you get up?', opts: ['do','does','are','is'], ans: 0, explain: 'you 用 do' },
+  { q: 'It\'s time ___ go to school.', opts: ['to','for','at','in'], ans: 0, explain: 'It\'s time to do sth' },
+  { q: 'I like ___ basketball.', opts: ['play','playing','played','plays'], ans: 1, explain: 'like doing 喜欢做某事' },
+  { q: 'He is good ___ math.', opts: ['at','in','on','for'], ans: 0, explain: 'be good at 擅长' },
+  { q: 'There ___ many books in the library.', opts: ['is','are','am','be'], ans: 1, explain: '复数名词用 There are' },
+  { q: 'My father ___ a car.', opts: ['have','has','had','having'], ans: 1, explain: '第三人称用 has' },
+  { q: '___ interesting story it is!', opts: ['What','What an','How','How an'], ans: 1, explain: 'What + a/an + 形容词 + 名词' },
+  { q: 'I often go to school ___ bus.', opts: ['by','on','in','take'], ans: 0, explain: 'by + 交通工具' },
+  { q: 'She ___ like swimming.', opts: ['don\'t','doesn\'t','isn\'t','aren\'t'], ans: 1, explain: '第三人称否定用 doesn\'t' },
+];
+
 let state = {
   grade: '7a',
   unit: 1,
@@ -22,6 +56,12 @@ let state = {
   quizCorrect: 0,
   quizWrong: 0,
   quizCurrent: null,
+  quizQuestions: [],
+  quizQIndex: 0,
+  transIndex: 0,
+  transCorrect: 0,
+  transWrong: 0,
+  transZhMode: false,
 };
 
 let data = loadData();
@@ -101,6 +141,7 @@ function onGradeChange() {
   startFlashcard();
   startSpell();
   startQuiz();
+  startTranslate();
 }
 
 // ==================== 今日单词 ====================
@@ -171,7 +212,37 @@ function getStreak() {
   return streak;
 }
 
-// ==================== 卡片浏览模式 ====================
+// ==================== 语音朗读 (Web Speech API) ====================
+function speakWord() {
+  const words = state.todayWords;
+  let text = '';
+  if (state.currentCardIndex < words.length) {
+    text = words[state.currentCardIndex].en;
+  } else if (state.spellIndex < words.length) {
+    text = words[state.spellIndex].en;
+  } else if (state.quizCurrent) {
+    text = state.quizCurrent.en;
+  }
+  if (!text) return;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'en-US';
+  utterance.rate = 0.85;
+  utterance.pitch = 1;
+  // 选一个美式女声
+  window.speechSynthesis.cancel();
+  const voices = window.speechSynthesis.getVoices();
+  const enVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Female'))
+    || voices.find(v => v.lang.startsWith('en-US'))
+    || voices.find(v => v.lang.startsWith('en'));
+  if (enVoice) utterance.voice = enVoice;
+  window.speechSynthesis.speak(utterance);
+}
+
+// 预加载语音
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
 let cardFlipped = false;
 
 function startFlashcard() {
@@ -192,9 +263,17 @@ function showCard() {
   const word = words[idx];
   $('cardWord').textContent = word.en;
   $('cardMeaning').textContent = word.zh;
+  $('cardPos').textContent = word.pos || '';
+  $('cardPosBack').textContent = word.pos || '';
   $('cardProgress').textContent = `${idx + 1} / ${words.length}`;
-  $('cardInner').classList.remove('flipped');
+  // 切词时立即显示正面，避免翻转闪烁
+  const inner = $('cardInner');
+  inner.style.transition = 'none';
+  inner.classList.remove('flipped');
   cardFlipped = false;
+  // 强制重绘后再恢复动画
+  inner.offsetHeight;
+  inner.style.transition = '';
 }
 
 function flipCard() {
@@ -230,6 +309,7 @@ function switchLearnMode(mode) {
   if (mode === 'flashcard') startFlashcard();
   if (mode === 'spell') startSpell();
   if (mode === 'quiz') startQuiz();
+  if (mode === 'translate') startTranslate();
 }
 
 // ==================== 拼写模式 ====================
@@ -255,7 +335,9 @@ function showSpellQuestion() {
     return;
   }
   $('spellPrompt').textContent = `✍️ 请拼写 (${state.spellIndex + 1}/${words.length})`;
-  $('spellPrompt').innerHTML += `<br><span style="font-size:20px;color:var(--primary)">${words[state.spellIndex].zh}</span>`;
+  const w = words[state.spellIndex];
+  $('spellPrompt').innerHTML += `<br><span style="font-size:14px;color:var(--gray-400)">${w.pos || ''}</span>
+    <br><span style="font-size:20px;color:var(--primary)">${w.zh}</span>`;
   $('spellInput').disabled = false;
   $('spellInput').value = '';
   $('spellInput').focus();
@@ -303,73 +385,170 @@ function nextSpell() {
   showSpellQuestion();
 }
 
-// ==================== 选择题模式 ====================
+// ==================== 语法选择题模式 ====================
 function startQuiz() {
   state.quizCorrect = 0;
   state.quizWrong = 0;
+  state.quizQIndex = 0;
+  state.quizQuestions = [...GRAMMAR_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, 10);
   $('quizCorrect').textContent = '0';
   $('quizWrong').textContent = '0';
   $('quizResult').textContent = '';
-  nextQuiz();
+  showQuizQuestion();
 }
 
-function nextQuiz() {
-  const words = state.todayWords;
-  if (!words || words.length === 0) {
-    $('quizWord').textContent = '暂无单词';
-    $('quizQuestion').textContent = '请先选择一个年级';
-    $('quizOptions').innerHTML = '';
+function showQuizQuestion() {
+  if (state.quizQIndex >= state.quizQuestions.length) {
+    $('quizQuestion').textContent = '🎉 语法练习完成！';
+    $('quizWord').textContent = `正确 ${state.quizCorrect}/${state.quizQuestions.length}`;
+    $('quizOptions').innerHTML = '<button class="btn btn-primary" onclick="startQuiz()">重新开始</button>';
     return;
   }
-
-  // 随机选一个词
-  const word = words[Math.floor(Math.random() * words.length)];
-  state.quizCurrent = word;
-
-  // 生成干扰项
-  const allZh = WORDS.filter(w => w.en !== word.en).map(w => w.zh);
-  const shuffled = allZh.sort(() => Math.random() - 0.5).slice(0, 3);
-  const options = [word.zh, ...shuffled].sort(() => Math.random() - 0.5);
-
-  $('quizQuestion').textContent = '请选择正确的中文翻译：';
-  $('quizWord').textContent = word.en;
-
+  const q = state.quizQuestions[state.quizQIndex];
+  state.quizCurrent = q;
+  $('quizQuestion').textContent = '🧠 语法填空';
+  $('quizWord').textContent = q.q;
   const optDiv = $('quizOptions');
   optDiv.innerHTML = '';
-  for (const opt of options) {
+  for (let i = 0; i < q.opts.length; i++) {
     const btn = document.createElement('button');
     btn.className = 'quiz-option';
-    btn.textContent = opt;
-    btn.onclick = () => selectQuizOption(btn, opt, word.zh, word.en);
+    btn.textContent = q.opts[i];
+    btn.onclick = () => selectQuizOption(btn, i, q);
     optDiv.appendChild(btn);
   }
   $('quizResult').textContent = '';
 }
 
-function selectQuizOption(btn, selected, correct, wordEn) {
-  // 禁用所有选项
+function selectQuizOption(btn, selected, q) {
   document.querySelectorAll('.quiz-option').forEach(o => o.classList.add('disabled'));
-  if (selected === correct) {
+  if (selected === q.ans) {
     btn.classList.add('selected-correct');
-    $('quizResult').textContent = '✅ 正确！';
+    $('quizResult').textContent = `✅ 正确！${q.explain}`;
     $('quizResult').style.color = 'var(--success)';
     state.quizCorrect++;
-    markWordLearned(wordEn);
-    data.wrongWords = data.wrongWords.filter(w => w !== wordEn);
   } else {
     btn.classList.add('selected-wrong');
-    // 高亮正确答案
     document.querySelectorAll('.quiz-option').forEach(o => {
-      if (o.textContent === correct) o.classList.add('selected-correct');
+      if (o.textContent === q.opts[q.ans]) o.classList.add('selected-correct');
     });
-    $('quizResult').textContent = `❌ 正确答案是: ${correct}`;
+    $('quizResult').textContent = `❌ ${q.explain}`;
     $('quizResult').style.color = 'var(--danger)';
     state.quizWrong++;
-    addWrongWord(wordEn);
   }
   $('quizCorrect').textContent = state.quizCorrect;
   $('quizWrong').textContent = state.quizWrong;
   saveData();
+}
+
+function nextQuiz() {
+  state.quizQIndex++;
+  showQuizQuestion();
+}
+
+// ==================== 翻译模式 ====================
+function startTranslate() {
+  state.transIndex = 0;
+  state.transCorrect = 0;
+  state.transWrong = 0;
+  $('transCorrect').textContent = '0';
+  $('transWrong').textContent = '0';
+  $('transResult').textContent = '';
+  $('transInput').value = '';
+  showTransQuestion();
+}
+
+function showTransQuestion() {
+  const words = state.todayWords;
+  if (!words || words.length === 0 || state.transIndex >= words.length) {
+    $('transWord').textContent = '🎉 翻译完成！';
+    $('transDirection').textContent = `正确 ${state.transCorrect}/${state.transIndex}`;
+    $('transInput').disabled = true;
+    return;
+  }
+  const w = words[state.transIndex];
+  if (state.transZhMode) {
+    $('transDirection').textContent = `中译英 (${state.transIndex+1}/${words.length})`;
+    $('transWord').textContent = `${w.zh} (${w.pos || '—'})`;
+  } else {
+    $('transDirection').textContent = `英译中 (${state.transIndex+1}/${words.length})`;
+    $('transWord').textContent = w.en;
+  }
+  $('transInput').disabled = false;
+  $('transInput').value = '';
+  $('transInput').focus();
+  $('transInput').className = 'spell-input';
+  $('transResult').textContent = '';
+}
+
+function checkTranslation() {
+  const words = state.todayWords;
+  if (!words || state.transIndex >= words.length) return;
+  const w = words[state.transIndex];
+  const input = $('transInput').value.trim().toLowerCase();
+
+  if (state.transZhMode) {
+    // 中译英
+    if (input === w.en.toLowerCase()) {
+      $('transInput').className = 'spell-input correct';
+      $('transResult').textContent = '✅ 正确！';
+      $('transResult').style.color = 'var(--success)';
+      state.transCorrect++;
+      markWordLearned(w.en);
+    } else {
+      $('transInput').className = 'spell-input wrong';
+      $('transResult').textContent = `❌ 正确答案: ${w.en}`;
+      $('transResult').style.color = 'var(--danger)';
+      state.transWrong++;
+      addWrongWord(w.en);
+    }
+  } else {
+    // 英译中（模糊匹配）
+    const zh = w.zh.split('；')[0].split('；')[0].toLowerCase();
+    const match = input.includes(zh) || zh.includes(input) || w.zh.includes(input);
+    if (match) {
+      $('transInput').className = 'spell-input correct';
+      $('transResult').textContent = `✅ 正确！(${w.zh})`;
+      $('transResult').style.color = 'var(--success)';
+      state.transCorrect++;
+      markWordLearned(w.en);
+    } else {
+      $('transInput').className = 'spell-input wrong';
+      $('transResult').textContent = `❌ 参考翻译: ${w.zh}`;
+      $('transResult').style.color = 'var(--danger)';
+      state.transWrong++;
+      addWrongWord(w.en);
+    }
+  }
+  $('transCorrect').textContent = state.transCorrect;
+  $('transWrong').textContent = state.transWrong;
+  saveData();
+}
+
+function showTransHint() {
+  const w = state.todayWords[state.transIndex];
+  if (!w) return;
+  if (state.transZhMode) {
+    $('transResult').textContent = `💡 提示: ${w.en.length} 个字母，以 ${w.en[0]} 开头`;
+  } else {
+    $('transResult').textContent = `💡 提示: 词性 ${w.pos || '—'}，意思是 ${w.zh.slice(0, 6)}...`;
+  }
+  $('transResult').style.color = 'var(--warning)';
+}
+
+function nextTranslation() {
+  state.transIndex++;
+  showTransQuestion();
+}
+
+function toggleTransDirection() {
+  state.transZhMode = $('transDirectionToggle').checked;
+  state.transIndex = 0;
+  state.transCorrect = 0;
+  state.transWrong = 0;
+  $('transCorrect').textContent = '0';
+  $('transWrong').textContent = '0';
+  showTransQuestion();
 }
 
 // ==================== 单词学习记录 ====================
@@ -670,11 +849,15 @@ document.addEventListener('DOMContentLoaded', () => {
   startFlashcard();
   startSpell();
   startQuiz();
+  startTranslate();
   initTasks();
   updateTodayStats();
 
-  // 键盘支持 - 拼写输入按回车检查
+  // 键盘支持
   $('spellInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') checkSpell();
+  });
+  $('transInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') checkTranslation();
   });
 });
